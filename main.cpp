@@ -1,31 +1,33 @@
 #include "mbed.h"
-
+using namespace std::chrono;
 namespace {
 #define PERIOD_MS 1000ms
+InterruptIn boutonPin(BUTTON1);  // Numéro de la broche du bouton
+DigitalOut ledPin(LED1);   // Numéro de la broche de la LED 
+Timer t;
 }
 
-InterruptIn button(BUTTON1);  // USER_BUTTON est généralement défini dans la bibliothèque mbed
-DigitalOut led(LED1);           // LED1 est généralement défini dans la bibliothèque mbed
 
-void on_button_rise()
+
+void flipAllumage()
 {
-    led = 1; // Allumer la LED lorsque le bouton est enfoncé
+    ledPin = 1;
+    t.start();
 }
 
-void on_button_fall()
+void flipEteindre()
 {
-    led = 0; // Éteindre la LED lorsque le bouton est relâché
+    ledPin = 0;
+    t.stop();
 }
-
 
 int main()
 {
-
-	button.rise(&on_button_rise);  // attacher l'adresse de la fonction on_button_rise à la montée du bouton
-    button.fall(&on_button_fall);  // attacher l'adresse de la fonction on_button_fall à la descente du bouton
-
+    boutonPin.rise(&flipAllumage);
+    boutonPin.fall(&flipEteindre);
     while (true) {
+        
+         printf("The time taken was %llu milliseconds\n", duration_cast<milliseconds>(t.elapsed_time()).count());
         ThisThread::sleep_for(PERIOD_MS / 8);
     }
-
 }
