@@ -1,33 +1,27 @@
 #include "mbed.h"
-using namespace std::chrono;
-namespace {
-#define PERIOD_MS 1000ms
-InterruptIn boutonPin(BUTTON1);  // Numéro de la broche du bouton
-DigitalOut ledPin(LED1);   // Numéro de la broche de la LED 
-Timer t;
-}
 
+I2C bus(I2C1_SDA, I2C1_SCL);
 
-
-void flipAllumage()
-{
-    ledPin = 1;
-    t.start();
-}
-
-void flipEteindre()
-{
-    ledPin = 0;
-    t.stop();
-}
+const int addr8bit = 0x76 << 1; // 8bit I2C address, 0x90
 
 int main()
 {
-    boutonPin.rise(&flipAllumage);
-    boutonPin.fall(&flipEteindre);
-    while (true) {
+    char cmd[1];
+    
+    printf("Initialisation du capteur BME280...\n");
+    
+    ThisThread::sleep_for(100ms); // Attente après la mise sous tension
+    
+    while (1) {
+        cmd[0] = 0xD0;
+        bus.write(addr8bit, cmd, 1);
+
+        ThisThread::sleep_for(500ms);
+
+        bus.read(addr8bit, cmd, 1);
+
+        printf("ca marche ? : %x\n", cmd[0]);
         
-         printf("The time taken was %llu milliseconds\n", duration_cast<milliseconds>(t.elapsed_time()).count());
-        ThisThread::sleep_for(PERIOD_MS / 8);
+        ThisThread::sleep_for(2000ms); // Attente avant la prochaine lecture
     }
 }
