@@ -1,35 +1,38 @@
-using namespace sixtron;
 #include "mbed.h"
 
-I2C i2c(I2C1_SDA, I2C1_SCL);
-BME280 capteur();
+DigitalOut led(LED1);
+Mutex led_mutex;
 
+void ping() {
+    for (int i = 0; i < 100; i++) {
+        led_mutex.lock();
+        printf("Ping\n");
+        led_mutex.unlock();
+        ThisThread::sleep_for(100ms);
+    }
+}
 
-const int addr8bit = 0x76 << 1; // 8bit I2C address, 0x90
+void pong() {
+    for (int i = 0; i < 100; i++) {
+        led_mutex.lock();
+        printf("Pong\n");
+        led_mutex.unlock();
+        ThisThread::sleep_for(100ms);
+    }
+}
 
-int main()
-{
-    char cmd[1];
-    char temp_data[3]; // Tableau pour stocker les valeurs brutes de température
+int main() {
+    Thread pingThread(osPriorityNormal, 1024); // Priorité normale
+    Thread pongThread(osPriorityAboveNormal, 1024); // Priorité supérieure
 
+    pingThread.start(callback(ping));
+    pongThread.start(callback(pong));
 
     while (1) {
-        // Lecture des registres de température en une seule opération
-        cmd[0] = 0xFA; // Adresse du registre temp_msb
-        i2c.write(addr8bit, cmd, 1);
-        i2c.read(addr8bit, temp_data, 3);
-
-        // Combinaison des valeurs brutes avec prise en compte du bit de signe
-        int raw_temp = (temp_data[0] << 12) | (temp_data[1] << 4) | temp_data[2];
-
-       
-
-        float temperature = raw_temp / 16384.0; // La valeur 16384 correspond à 2^14, selon la datasheet
-
-        // Affichage de la température
-       // printf("Température brute: %d\n", raw_temp);
-        printf("Température calculée: %.2f °C\n", temperature);
-
-        ThisThread::sleep_for(1000ms); // Attente avant la prochaine lecture
+        led_mutex.lock();
+        led = !led;
+        printf("Alive!\n");
+        led_mutex.unlock();
+        ThisThread::sleep_for(500ms);
     }
 }
